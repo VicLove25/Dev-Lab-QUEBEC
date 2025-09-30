@@ -1,5 +1,5 @@
 {
-  "name": "Dev-Lab-QUEBEC",
+  "name": "daily-task-manager",
   "version": "1.0.0",
   "main": "app.js",
   "dependencies": {
@@ -82,7 +82,7 @@
     "cleanup": "node cleanup.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "Victor Love",
   "license": "ISC",
-  "description": ""
+  "description": "Daily Task Manager is a minimalist Single Page Application that helps users manage their everyday tasks."
 }

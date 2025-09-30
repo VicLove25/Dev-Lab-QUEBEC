@@ -30,7 +30,7 @@ let db;
 async function connectDB() {
   try {
     await client.connect();
-    db = client.db("school"); // Database name
+    db = client.db("task_manager"); // Database name
     console.log("Connected to MongoDB!");
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
@@ -226,107 +226,102 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // Collection: students (documents with name, age, grade fields)
 
 // CREATE - Add a new student (PROTECTED)
-app.post('/api/students', authenticateToken, async (req, res) => {
+app.post('/api/tasks', authenticateToken, async (req, res) => {
   try {
-    const { name, age, grade } = req.body;
+    const { description } = req.body;
 
     // Simple validation
-    if (!name || !age || !grade) {
-      return res.status(400).json({ error: 'Name, age, and grade are required' });
+    if (!description) {
+      return res.status(400).json({ error: 'Task description is required' });
     }
 
-    const student = {
-      name,
-      age: parseInt(age),
-      grade,
-      createdBy: req.user.username, // Track who created this student
+    const task = {
+      description,
+      isCompleted: false,
+      createdBy: req.user.username, 
       createdAt: new Date()
     };
-    const result = await db.collection('students').insertOne(student);
 
-    console.log(`✅ Student created by ${req.user.username}: ${name}`);
+    const result = await db.collection('tasks').insertOne(task);
+
+    console.log(`✅ Task created by ${req.user.username}: ${name}`);
 
     res.status(201).json({
-      message: 'Student created successfully',
+      message: 'Task created successfully',
       studentId: result.insertedId,
-      student: { ...student, _id: result.insertedId }
+      student: { ...task, _id: result.insertedId }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create student: ' + error.message });
+    res.status(500).json({ error: 'Failed to create task: ' + error.message });
   }
 });
 
-// READ - Get all students (PROTECTED)
-app.get('/api/students', authenticateToken, async (req, res) => {
+// READ - Get all tasks (PROTECTED)
+app.get('/api/tasks', authenticateToken, async (req, res) => {
   try {
-    const students = await db.collection('students').find({}).toArray();
-    console.log(`📋 ${req.user.username} viewed ${students.length} students`);
-    res.json(students); // Return just the array for frontend simplicity
+    const tasks = await db.collection('tasks').find({}).toArray();
+    console.log(`📋 ${req.user.username} viewed ${tasks.length} tasks`);
+    res.json(tasks); 
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch students: ' + error.message });
+    res.status(500).json({ error: 'Failed to fetch tasks: ' + error.message });
   }
 });
 
 // UPDATE - Update a student by ID (PROTECTED)
-app.put('/api/students/:id', authenticateToken, async (req, res) => {
+app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, age, grade } = req.body;
+    const { isCompleted } = req.body;
 
     // Validate ObjectId
     if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid student ID' });
+      return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const updateData = { updatedBy: req.user.username, updatedAt: new Date() };
-    if (name) updateData.name = name;
-    if (age) updateData.age = parseInt(age);
-    if (grade) updateData.grade = grade;
+    const updateData = { 
+      isCompleted: isCompleted, 
+      updatedBy: req.user.username, 
+      updatedAt: new Date() 
+    };
 
-    const result = await db.collection('students').updateOne(
+    const result = await db.collection('tasks').updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
     );
 
     if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: 'Task not found' });
     }
 
-    console.log(`✏️ Student updated by ${req.user.username}: ${id}`);
+    console.log(`✏️ Task updated by ${req.user.username}: ${id}`);
 
-    res.json({
-      message: 'Student updated successfully',
-      modifiedCount: result.modifiedCount
-    });
+    res.json({ message: 'Task updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update student: ' + error.message });
+    res.status(500).json({ error: 'Failed to update task: ' + error.message });
   }
 });
 
 // DELETE - Delete a student by ID (PROTECTED)
-app.delete('/api/students/:id', authenticateToken, async (req, res) => {
+app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
     // Validate ObjectId
     if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid student ID' });
+      return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const result = await db.collection('students').deleteOne({ _id: new ObjectId(id) });
+    const result = await db.collection('tasks').deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: 'Task not found' });
     }
 
-    console.log(`🗑️ Student deleted by ${req.user.username}: ${id}`);
+    console.log(`🗑️ Task deleted by ${req.user.username}: ${id}`);
 
-    res.json({
-      message: 'Student deleted successfully',
-      deletedCount: result.deletedCount
-    });
+    res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete student: ' + error.message });
+    res.status(500).json({ error: 'Failed to delete task: ' + error.message });
   }
 });
 

@@ -12,16 +12,12 @@ const client = new MongoClient(uri, {
   }
 });
 
-// Sample student data
-const sampleStudents = [
-  { name: "Alice Johnson", age: 20, grade: "A" },
-  { name: "Bob Smith", age: 19, grade: "B+" },
-  { name: "Charlie Brown", age: 21, grade: "A-" },
-  { name: "Diana Prince", age: 18, grade: "A+" },
-  { name: "Ethan Hunt", age: 22, grade: "B" },
-  { name: "Fiona Gallagher", age: 19, grade: "B-" },
-  { name: "George Washington", age: 20, grade: "A" },
-  { name: "Hannah Montana", age: 18, grade: "C+" }
+// Sample task data
+const sampleTasks = [
+  { description: "Finish project proposal", isCompleted: false },
+  { description: "Buy groceries", isCompleted: false },
+  { description: "Call the bank", isCompleted: true },
+  { description: "Schedule dentist appointment", isCompleted: false },
 ];
 
 async function seedDatabase() {
@@ -30,29 +26,13 @@ async function seedDatabase() {
     await client.connect();
     console.log("Connected to MongoDB Atlas!");
 
-    const db = client.db("school");
-    const collection = db.collection("students");
+    const db = client.db("task_manager");
+    const collection = db.collection("tasks");
 
-    // Check if students already exist
-    const existingCount = await collection.countDocuments();
-    console.log(`Found ${existingCount} existing students`);
-
-    if (existingCount > 0) {
-      console.log("🗑️  Clearing existing students before seeding...");
-      await collection.deleteMany({});
-      console.log("✅ Existing data cleared");
-    }
-
-    // Insert sample students
-    const result = await collection.insertMany(sampleStudents);
-    console.log(`✅ Successfully seeded ${result.insertedCount} students!`);
+    await collection.deleteMany({}); // Clear old tasks first
+    const result = await collection.insertMany(sampleTasks);
+    console.log(`✅ Successfully seeded ${result.insertedCount} tasks!`);
     
-    // Display inserted students
-    console.log("\n📚 Sample students added:");
-    sampleStudents.forEach((student, index) => {
-      console.log(`${index + 1}. ${student.name} (Age: ${student.age}, Grade: ${student.grade})`);
-    });
-
   } catch (error) {
     console.error("❌ Error seeding database:", error);
   } finally {
