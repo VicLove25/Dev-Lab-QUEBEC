@@ -1,4 +1,4 @@
-# Dev-Lab-QUEBEC
+# dev-lab-quebec
 ## Author: 
 Victor Love
 ## App Name: 
