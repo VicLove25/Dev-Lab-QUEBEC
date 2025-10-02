@@ -302,7 +302,7 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE - Delete a student by ID (PROTECTED)
+// DELETE - Delete a task by ID (PROTECTED)
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
