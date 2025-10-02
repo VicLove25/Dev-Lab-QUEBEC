@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENT SELECTORS ---
+
     // Authentication section
     const authSection = document.getElementById('auth-section');
     const usernameInput = document.getElementById('username');
@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Messaging
     const errorMessage = document.getElementById('error-message');
-
-    // --- HELPER FUNCTIONS ---
 
     // Function to display an error message
     function showError(message) {
@@ -40,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- API CALLS (CRUD OPERATIONS) ---
 
     // READ: Fetch all tasks from the server
     async function fetchTasks() {
@@ -48,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!headers) return; // Stop if not logged in
 
         try {
-            const response = await fetch('/api/tasks', { headers }); // Changed from /api/students
+            const response = await fetch('/api/tasks', { headers }); 
 
             if (!response.ok) {
                 // If token is bad, log the user out
@@ -74,22 +71,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const headers = getAuthHeaders();
 
         try {
-            const response = await fetch('/api/tasks', { // Changed from /api/students
+            const response = await fetch('/api/tasks', { 
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify({ description }) // Changed payload to match task model
+                body: JSON.stringify({ description }) 
             });
 
             if (!response.ok) throw new Error('Failed to add task.');
             
-            taskInput.value = ''; // Clear input field
-            fetchTasks(); // Refresh the list
+            taskInput.value = ''; 
+            fetchTasks(); 
         } catch (error) {
             showError(error.message);
         }
     });
 
-    // UPDATE & DELETE (handled via a single event listener on the task list)
+    // UPDATE & DELETE 
     taskList.addEventListener('click', async (e) => {
         const headers = getAuthHeaders();
         const target = e.target;
@@ -101,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // DELETE button clicked
         if (target.classList.contains('delete-btn')) {
             try {
-                const response = await fetch(`/api/tasks/${id}`, { // Changed from /api/students
+                const response = await fetch(`/api/tasks/${id}`, { 
                     method: 'DELETE',
                     headers: headers
                 });
@@ -116,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('toggle-btn')) {
             const isCompleted = !li.querySelector('span').classList.contains('completed');
             try {
-                const response = await fetch(`/api/tasks/${id}`, { // Changed from /api/students
+                const response = await fetch(`/api/tasks/${id}`, { 
                     method: 'PUT',
                     headers: headers,
                     body: JSON.stringify({ isCompleted }) // Update the completion status
@@ -129,8 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-    // --- RENDERING ---
 
     // Renders the list of tasks to the page
     function renderTasks(tasks) {
@@ -155,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- AUTHENTICATION ---
 
     // Register a new user
     registerBtn.addEventListener('click', async () => {
@@ -208,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', logout);
 
 
-    // --- UI MANAGEMENT ---
 
     // Updates the UI based on whether the user is logged in or not
     function updateUIForAuthState() {
