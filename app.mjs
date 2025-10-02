@@ -226,7 +226,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // CRUD ENDPOINTS FOR TEACHING
 // Collection: students (documents with name, age, grade fields)
 
-// CREATE - Add a new student (PROTECTED)
+// CREATE - Add a new task (PROTECTED)
 app.post('/api/tasks', authenticateToken, async (req, res) => {
   try {
     const { description } = req.body;
@@ -245,12 +245,12 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
 
     const result = await db.collection('tasks').insertOne(task);
 
-    console.log(`✅ Task created by ${req.user.username}: ${name}`);
+    console.log(`✅ Task created by ${req.user.username}: ${description}`);
 
     res.status(201).json({
       message: 'Task created successfully',
-      studentId: result.insertedId,
-      student: { ...task, _id: result.insertedId }
+      taskId: result.insertedId,
+      task: { ...task, _id: result.insertedId }
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create task: ' + error.message });
