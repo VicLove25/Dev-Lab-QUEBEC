@@ -1,9 +1,3 @@
-/**
- * Author: Victor Love
- * Date: [Current Date]
- * Description: Frontend JavaScript for the Daily Task Manager.
- * Handles user authentication and CRUD operations for tasks.
- */
 document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENT SELECTORS ---
     // Authentication section
