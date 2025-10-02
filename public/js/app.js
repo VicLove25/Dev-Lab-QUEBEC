@@ -1,13 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-    // Authentication section
     const authSection = document.getElementById('auth-section');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const loginBtn = document.getElementById('login-btn');
     const registerBtn = document.getElementById('register-btn');
 
-    // Task management section
     const taskSection = document.getElementById('task-section');
     const taskForm = document.getElementById('new-task-form');
     const taskInput = document.getElementById('task-input');
@@ -15,19 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const userInfo = document.getElementById('user-info');
 
-    // Messaging
     const errorMessage = document.getElementById('error-message');
 
-    // Function to display an error message
     function showError(message) {
         errorMessage.textContent = message;
         errorMessage.style.display = 'block';
         setTimeout(() => {
             errorMessage.style.display = 'none';
-        }, 4000); // Hide after 4 seconds
+        }, 4000);
     }
     
-    // Gets authentication headers, including the JWT token
     function getAuthHeaders() {
         const token = localStorage.getItem('token');
         if (!token) return null;
@@ -38,17 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-
-    // READ: Fetch all tasks from the server
     async function fetchTasks() {
         const headers = getAuthHeaders();
-        if (!headers) return; // Stop if not logged in
+        if (!headers) return;
 
         try {
-            const response = await fetch('/api/tasks', { headers }); 
+            const response = await fetch('/api/tasks', { headers });
 
             if (!response.ok) {
-                // If token is bad, log the user out
                 if (response.status === 401 || response.status === 403) {
                    logout();
                 }
@@ -62,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // CREATE: Add a new task
     taskForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const description = taskInput.value.trim();
@@ -71,22 +61,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const headers = getAuthHeaders();
 
         try {
-            const response = await fetch('/api/tasks', { 
+            const response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify({ description }) 
+                body: JSON.stringify({ description })
             });
 
             if (!response.ok) throw new Error('Failed to add task.');
             
-            taskInput.value = ''; 
-            fetchTasks(); 
+            taskInput.value = '';
+            fetchTasks();
         } catch (error) {
             showError(error.message);
         }
     });
 
-    // UPDATE & DELETE 
     taskList.addEventListener('click', async (e) => {
         const headers = getAuthHeaders();
         const target = e.target;
@@ -95,41 +84,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const id = li.dataset.id;
 
-        // DELETE button clicked
         if (target.classList.contains('delete-btn')) {
             try {
-                const response = await fetch(`/api/tasks/${id}`, { 
+                const response = await fetch(`/api/tasks/${id}`, {
                     method: 'DELETE',
                     headers: headers
                 });
                 if (!response.ok) throw new Error('Failed to delete task.');
-                fetchTasks(); // Refresh list
+                fetchTasks();
             } catch (error) {
                 showError(error.message);
             }
         }
 
-        // TOGGLE COMPLETE button clicked
         if (target.classList.contains('toggle-btn')) {
             const isCompleted = !li.querySelector('span').classList.contains('completed');
             try {
-                const response = await fetch(`/api/tasks/${id}`, { 
+                const response = await fetch(`/api/tasks/${id}`, {
                     method: 'PUT',
                     headers: headers,
-                    body: JSON.stringify({ isCompleted }) // Update the completion status
+                    body: JSON.stringify({ isCompleted })
                 });
                 if (!response.ok) throw new Error('Failed to update task.');
-                fetchTasks(); // Refresh list
+                fetchTasks();
             } catch (error) {
                 showError(error.message);
             }
         }
     });
 
-
-    // Renders the list of tasks to the page
     function renderTasks(tasks) {
-        taskList.innerHTML = ''; // Clear the current list
+        taskList.innerHTML = '';
         if (tasks.length === 0) {
             taskList.innerHTML = '<li class="list-group-item text-muted">No tasks yet. Add one above!</li>';
             return;
@@ -150,8 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    // Register a new user
     registerBtn.addEventListener('click', async () => {
         const username = usernameInput.value;
         const password = passwordInput.value;
@@ -170,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Login a user
     loginBtn.addEventListener('click', async () => {
         const username = usernameInput.value;
         const password = passwordInput.value;
@@ -183,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
             
-            // Store token and username in browser's local storage
             localStorage.setItem('token', data.token);
             localStorage.setItem('username', data.user.username);
             
@@ -193,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Logout
     function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
@@ -201,19 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     logoutBtn.addEventListener('click', logout);
 
-
-
-    // Updates the UI based on whether the user is logged in or not
     function updateUIForAuthState() {
         const token = localStorage.getItem('token');
         if (token) {
-            // Logged in
             authSection.style.display = 'none';
             taskSection.style.display = 'block';
             userInfo.textContent = `Logged in as: ${localStorage.getItem('username')}`;
             fetchTasks();
         } else {
-            // Logged out
             authSection.style.display = 'block';
             taskSection.style.display = 'none';
             taskList.innerHTML = '';
