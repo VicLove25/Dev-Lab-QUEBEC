@@ -12,10 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 app.use(express.static(join(__dirname, 'public')));
-
 app.use(express.json());
 
-// const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = process.env.MONGO_URI;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -61,69 +59,20 @@ function authenticateToken(req, res, next) {
   });
 }
 
-
+// Serve the main application file
 app.get('/', (req, res) => {
-  res.send('Hello Express from Render 😍😍😍. <a href="barry">barry</a><br><a href="student-crud.html">📝 crud time!</a><br><a href="advanced-student-manager.html">🚀 Advanced CRUD!</a><br><a href="auth.html">🔐 JWT Authentication</a>')
-})
-
-// endpoints...middlewares...apis? 
-
-// send an html file
-app.get('/barry', (req, res) => {
-
-  res.sendFile(join(__dirname, 'public', 'barry.html'))
-
-})
-
-app.get('/api/barry', (req, res) => {
-  // res.send('barry. <a href="/">home</a>')
-  const myVar = 'Hello from server!';
-  res.json({ myVar });
-})
-
-app.get('/api/query', (req, res) => {
-
-  //console.log("client request with query param:", req.query.name); 
-  const name = req.query.name;
-  res.json({ "message": `Hi, ${name}. How are you?` });
-
-  // receivedData.queries.push(req.query.name || 'Guest');
-  // const name = req.query.name || 'Guest';
-  // res.json({ message: `Hello, ${name} (from query param)` });
+    res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/api/url/:iaddasfsd', (req, res) => {
-
-  console.log("client request with URL param:", req.params.iaddasfsd);
-  // const name = req.query.name; 
-  // res.json({"message": `Hi, ${name}. How are you?`});
-
-});
-
-
-app.get('/api/body', (req, res) => {
-
-  console.log("client request with POST body:", req.query);
-  // const name = req.body.name; 
-  // res.json({"message": `Hi, ${name}. How are you?`});
-
-});
-
-// AUTHENTICATION ENDPOINTS FOR TEACHING
-// Collection: users (documents with username, password fields)
-
+// AUTHENTICATION ENDPOINTS
 // Register new user
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
 
     // Simple validation
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    if (!username || !password || password.length < 6) {
+      return res.status(400).json({ error: 'Username and a password of at least 6 characters are required' });
     }
 
     // Check if user already exists
@@ -133,23 +82,13 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = { username, password: hashedPassword, createdAt: new Date() };
-    const result = await db.collection('users').insertOne(user);
-
-    console.log(`✅ New user registered: ${username}`);
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      userId: result.insertedId,
-      username: username
-    });
+    const result = await db.collection('users').insertOne({ username, password: hashedPassword, createdAt: new Date() });
+    res.status(201).json({ message: 'User registered successfully', userId: result.insertedId });
   } catch (error) {
-    console.error('❌ Registration error:', error.message);
-    res.status(500).json({ error: 'Failed to register user: ' + error.message });
+    res.status(500).json({ error: 'Failed to register user' });
   }
 });
 
@@ -161,11 +100,6 @@ app.post('/api/auth/login', async (req, res) => {
     /* DESTRUCTURING. 
     The syntax { username, password } = req.body means:
     Pull out the properties named username and password directly into variables with the same names.
-    So instead of writing:
-       const username = req.body.username;
-       const password = req.body.password;
-    
-       you can write it in one compact line.
     */
 
     // Simple validation
@@ -186,119 +120,61 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Create JWT token
-    const tokenPayload = {
-      userId: user._id,
-      username: user.username
-    };
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
-
-    console.log(`✅ User logged in: ${username}`);
-
-    res.json({
-      message: 'Login successful',
-      token: token,
-      user: { id: user._id, username: user.username }
-    });
+    const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ message: 'Login successful', token: token, user: { id: user._id, username: user.username } });
   } catch (error) {
-    console.error('❌ Login error:', error.message);
-    res.status(500).json({ error: 'Failed to login: ' + error.message });
+    res.status(500).json({ error: 'Failed to login' });
   }
 });
 
-// Get current user info (protected route example)
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  try {
-    const user = await db.collection('users').findOne(
-      { _id: new ObjectId(req.user.userId) },
-      { projection: { password: 0 } } // Don't return password
-    );
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ user });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get user info: ' + error.message });
-  }
-});
-
-// CRUD ENDPOINTS FOR TEACHING
-// Collection: students (documents with name, age, grade fields)
-
+// TASK CRUD ENDPOINTS
 // CREATE - Add a new task (PROTECTED)
 app.post('/api/tasks', authenticateToken, async (req, res) => {
   try {
     const { description } = req.body;
-
-    // Simple validation
     if (!description) {
       return res.status(400).json({ error: 'Task description is required' });
     }
-
     const task = {
       description,
       isCompleted: false,
       createdBy: req.user.username, 
       createdAt: new Date()
     };
-
     const result = await db.collection('tasks').insertOne(task);
-
-    console.log(`✅ Task created by ${req.user.username}: ${description}`);
-
-    res.status(201).json({
-      message: 'Task created successfully',
-      taskId: result.insertedId,
-      task: { ...task, _id: result.insertedId }
-    });
+    res.status(201).json({ message: 'Task created successfully', taskId: result.insertedId, task: { ...task, _id: result.insertedId } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create task: ' + error.message });
+    res.status(500).json({ error: 'Failed to create task' });
   }
 });
 
-// READ - Get all tasks (PROTECTED)
+// READ - Get all tasks for the logged-in user (PROTECTED)
 app.get('/api/tasks', authenticateToken, async (req, res) => {
   try {
-    const tasks = await db.collection('tasks').find({}).toArray();
-    console.log(`📋 ${req.user.username} viewed ${tasks.length} tasks`);
+    const tasks = await db.collection('tasks').find({ createdBy: req.user.username }).toArray();
     res.json(tasks); 
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch tasks: ' + error.message });
+    res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 });
 
-// UPDATE - Update a student by ID (PROTECTED)
+// UPDATE - Update a task by ID (PROTECTED)
 app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { isCompleted } = req.body;
-
-    // Validate ObjectId
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
-
-    const updateData = { 
-      isCompleted: isCompleted, 
-      updatedBy: req.user.username, 
-      updatedAt: new Date() 
-    };
-
     const result = await db.collection('tasks').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
+      { _id: new ObjectId(id), createdBy: req.user.username },
+      { $set: { isCompleted: req.body.isCompleted, updatedAt: new Date() } }
     );
-
     if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Task not found or permission denied' });
     }
-
-    console.log(`✏️ Task updated by ${req.user.username}: ${id}`);
-
     res.json({ message: 'Task updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update task: ' + error.message });
+    res.status(500).json({ error: 'Failed to update task' });
   }
 });
 
@@ -306,73 +182,18 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Validate ObjectId
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
-
-    const result = await db.collection('tasks').deleteOne({ _id: new ObjectId(id) });
-
+    const result = await db.collection('tasks').deleteOne({ _id: new ObjectId(id), createdBy: req.user.username });
     if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Task not found or permission denied' });
     }
-
-    console.log(`🗑️ Task deleted by ${req.user.username}: ${id}`);
-
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete task: ' + error.message });
+    res.status(500).json({ error: 'Failed to delete task' });
   }
 });
-
-// SEED - Add sample data for teaching (PROTECTED)
-app.post('/api/seed', authenticateToken, async (req, res) => {
-  try {
-    // First, clear existing data
-    await db.collection('students').deleteMany({});
-
-    // Sample students for teaching
-    const sampleStudents = [
-      { name: "Alice Johnson", age: 20, grade: "A", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Bob Smith", age: 19, grade: "B+", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Charlie Brown", age: 21, grade: "A-", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Diana Prince", age: 18, grade: "A+", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Edward Norton", age: 22, grade: "B", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Fiona Apple", age: 19, grade: "A", createdBy: req.user.username, createdAt: new Date() },
-      { name: "George Wilson", age: 20, grade: "C+", createdBy: req.user.username, createdAt: new Date() },
-      { name: "Hannah Montana", age: 18, grade: "B-", createdBy: req.user.username, createdAt: new Date() }
-    ];
-
-    const result = await db.collection('students').insertMany(sampleStudents);
-
-    console.log(`🌱 Database seeded by ${req.user.username}: ${result.insertedCount} students`);
-
-    res.json({
-      message: `Database seeded successfully! Added ${result.insertedCount} sample students.`,
-      insertedCount: result.insertedCount
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to seed database: ' + error.message });
-  }
-});
-
-// CLEANUP - Remove all student data (PROTECTED)
-app.delete('/api/cleanup', authenticateToken, async (req, res) => {
-  try {
-    const result = await db.collection('students').deleteMany({});
-
-    console.log(`🧹 Database cleaned by ${req.user.username}: ${result.deletedCount} students removed`);
-
-    res.json({
-      message: `Database cleaned successfully! Removed ${result.deletedCount} students.`,
-      deletedCount: result.deletedCount
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to cleanup database: ' + error.message });
-  }
-});
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
